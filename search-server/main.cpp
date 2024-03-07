@@ -67,7 +67,7 @@ class SearchServer {
         const map<string, double> words_tf =
             SplitIntoWordsNoStopWithTF(document);
         for (const auto& [word, tf] : words_tf) {
-            documents_[word][document_count_] = tf;
+            documents_[word][document_id] = tf;
         }
 
         document_count_ += 1;
