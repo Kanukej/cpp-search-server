@@ -59,8 +59,8 @@ class SearchServer {
     }
 
     void AddDocument(int document_id, const string& document) {
-        const map<string, double> words_tf =
-            SplitIntoWordsNoStopWithTF(document);
+        vector<string> words = SplitIntoWordsNoStop(document);
+        const map<string, double> words_tf = CalculateTF(words);
         for (const auto& [word, tf] : words_tf) {
             documents_[word][document_id] = tf;
         }
@@ -102,15 +102,10 @@ class SearchServer {
         return words;
     }
 
-    map<string, double> SplitIntoWordsNoStopWithTF(const string& text) const {
+    
+    
+    map<string, double> CalculateTF(const vector<string>& words) const {
         map<string, double> words_tf;
-        vector<string> words;
-        for (const string& word : SplitIntoWords(text)) {
-            if (!IsStopWord(word)) {
-                words.push_back(word);
-            }
-        }
-
         for (const string& word : words) {
             double tf =
                 static_cast<double>(count(words.begin(), words.end(), word)) /
@@ -121,6 +116,7 @@ class SearchServer {
         return words_tf;
     }
 
+    
     struct Query {
         set<string> query_words;
         set<string> minus_words;
