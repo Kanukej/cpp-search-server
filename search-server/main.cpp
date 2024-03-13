@@ -133,16 +133,19 @@ class SearchServer {
 
         return query;
     }
-
+    
+    double CalculateIdf(size_t count) const {
+        return log(static_cast<double>(document_count_) / count);
+    }
+    
     vector<Document> FindAllDocuments(const Query& query) const {
         vector<Document> matched_documents;
         map<int, double> document_relevance;
         for (const auto& word : query.query_words) {
             if (documents_.count(word)) {
                 const map<int, double>& id_tf = documents_.at(word);
+                double idf = CalculateIdf(id_tf.size());
                 for (const auto& [id, tf] : id_tf) {
-                    double idf = log(static_cast<double>(document_count_) /
-                                     id_tf.size());
                     document_relevance[id] += tf * idf;
                 }
             }
