@@ -3,7 +3,9 @@
 #include <iostream>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -45,10 +47,37 @@ vector<string> SplitIntoWords(const string& text) {
     return words;
 }
 
+[[nodiscard]] bool CheckWord(const string& word) {
+    for (const char& c : word) {
+        if (static_cast<int>(c) >= 0 && static_cast<int>(c) <= 31) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename Container>
+[[nodiscard]] bool CheckWords(const Container& words) {
+    for (const string& word : words) {
+        if (!CheckWord(word)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 struct Document {
-    int id;
-    double relevance;
-    int rating;
+    Document() = default;
+
+    Document(int id, double relevance, int rating)
+        : id(id)
+        , relevance(relevance)
+        , rating(rating) {
+    }
+
+    int id = 0;
+    double relevance = 0.0;
+    int rating = 0;
 };
 
 enum class DocumentStatus {
@@ -58,8 +87,42 @@ enum class DocumentStatus {
     REMOVED,
 };
 
+template <typename StringContainer>
+set<string> MakeUniqueNonEmptyStrings(const StringContainer& strings) {
+    set<string> non_empty_strings;
+    for (const string& str : strings) {
+        if (!str.empty()) {
+            non_empty_strings.insert(str);
+        }
+    }
+    return non_empty_strings;
+}
+
 class SearchServer {
 public:
+    SearchServer() = default;
+    
+    template <typename StringContainer>
+    explicit SearchServer(const StringContainer& stop_words) : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
+        if (!CheckWords(stop_words)) {
+            throw invalid_argument("Stop words have invalid symbols within!");
+        }
+    }
+
+    explicit SearchServer(const string& stop_words_text)
+        : SearchServer(
+            SplitIntoWords(stop_words_text))  // Invoke delegating constructor from string container
+    {
+        //
+    }
+    
+    int GetDocumentId(const int index) const {
+        if (index < 0 || index >= static_cast<int>(documents_ids_.size())) {
+            throw out_of_range("Index of document must be between 0 and " + to_string(documents_ids_.size()));
+        }
+        return documents_ids_[index];
+    }
+    
     void SetStopWords(const string& text) {
         for (const string& word : SplitIntoWords(text)) {
             stop_words_.insert(word);
@@ -68,11 +131,24 @@ public:
 
     void AddDocument(int document_id, const string& document, DocumentStatus status,
                      const vector<int>& ratings) {
+        if (document_id < 0) {
+            throw invalid_argument("negative document ids is not supported!");
+        }
+        if (documents_.count(document_id)) {
+            throw invalid_argument("Server is already contains document id: " + to_string(document_id));
+        }
+        
         const vector<string> words = SplitIntoWordsNoStop(document);
+        if (!CheckWords(words)) {
+            throw invalid_argument("Document contains invalid symbols!");
+        }
+        
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
             word_to_document_freqs_[word][document_id] += inv_word_count;
         }
+        
+        documents_ids_.push_back(document_id);
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     }
 
@@ -137,6 +213,7 @@ private:
     set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
+    vector<int> documents_ids_;
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
@@ -170,6 +247,12 @@ private:
         if (text[0] == '-') {
             is_minus = true;
             text = text.substr(1);
+            if (!text.size()) {
+                throw invalid_argument("Empty minus word!");
+            }
+            if (text[0] == '-') {
+                throw invalid_argument("Minus word should not contain extra minus symbols!");
+            }
         }
         return {text, is_minus, IsStopWord(text)};
     }
@@ -182,6 +265,10 @@ private:
     Query ParseQuery(const string& text) const {
         Query query;
         for (const string& word : SplitIntoWords(text)) {
+            if (!CheckWord(word)) {
+                throw invalid_argument("Query contains invalid symbols!");
+            }
+            
             const QueryWord query_word = ParseQueryWord(word);
             if (!query_word.is_stop) {
                 if (query_word.is_minus) {
@@ -205,6 +292,7 @@ private:
             if (word_to_document_freqs_.count(word) == 0) {
                 continue;
             }
+            
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
             for (const auto &[document_id, term_freq] : word_to_document_freqs_.at(word)) {
                 if (filter(document_id, documents_.at(document_id).status, documents_.at(document_id).rating)) {
