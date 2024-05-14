@@ -1,14 +1,4 @@
-#include <algorithm>
-#include <cmath>
-#include <deque>
 #include <iostream>
-#include <map>
-#include <numeric>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
 
 #include "document.h"
 #include "paginator.h"

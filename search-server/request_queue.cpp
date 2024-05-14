@@ -10,7 +10,7 @@ RequestQueue::RequestQueue(const SearchServer& search_server) : search_server_(s
     time_ = 0;
 }
 
-RequestQueue::QueryResult::QueryResult(vector<Document>& r, size_t t) : result(r) {
+RequestQueue::QueryResult::QueryResult(vector<Document>& r, size_t t) : count(r.size()) {
     time = t;
 }
 
@@ -28,7 +28,7 @@ vector<Document> RequestQueue::AddFindRequest(const string& raw_query) {
 
 int RequestQueue::GetNoResultRequests() const {
     return static_cast<int>(count_if(requests_.begin(), requests_.end(), [](const QueryResult& item){
-        return item.result.empty();
+        return item.count == 0;
     }));
 }
 

@@ -22,7 +22,7 @@ public:
 
 private:
     struct QueryResult {
-        std::vector<Document> result;
+        size_t count;
         size_t time;
         QueryResult(std::vector<Document>& r, size_t t);
     };
