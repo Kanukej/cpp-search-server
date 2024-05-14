@@ -1,12 +1,22 @@
-//
-//  document.h
-//  cpp-search-server
-//
-//  Created by Алина Родионова on 12/5/24.
-//
+#pragma once
 
-#ifndef document_h
-#define document_h
+struct Document {
+    Document() = default;
 
+    Document(int id, double relevance, int rating)
+        : id(id)
+        , relevance(relevance)
+        , rating(rating) {
+    }
 
-#endif /* document_h */
+    int id = 0;
+    double relevance = 0.0;
+    int rating = 0;
+};
+
+enum class DocumentStatus {
+    ACTUAL,
+    IRRELEVANT,
+    BANNED,
+    REMOVED,
+};

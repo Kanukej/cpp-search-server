@@ -1,8 +1,19 @@
-//
-//  read_input_functions.cpp
-//  cpp-search-server
-//
-//  Created by Алина Родионова on 12/5/24.
-//
+#include "read_input_functions.h"
 
-#include <stdio.h>
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+string ReadLine() {
+    string s;
+    getline(cin, s);
+    return s;
+}
+
+int ReadLineWithNumber() {
+    int result;
+    cin >> result;
+    ReadLine();
+    return result;
+}
