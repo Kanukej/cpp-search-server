@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "document.h"
 #include "search_server.h"
 
 class RequestQueue {
